@@ -1,0 +1,25 @@
+<html>
+   <link rel="stylesheet" href="p4wn.css" />
+ <body>
+  <div id="board-goes-here"></div>
+ <script src="http://cdn.pubnub.com/pubnub.min.js"></script>
+ <script>
+     var pubnub = PUBNUB.init({
+         publish_key   : 'demo',
+         subscribe_key : 'demo'
+     });
+     var CHESS_CHANNEL_NAME = 'codychesstest:' + prompt('ChessRoomName?');
+  </script>
+  <script src="engine.js"></script>
+  <script src="display.js"></script>
+  <script>
+   P4WN_IMAGE_DIR = 'images';
+   var game = p4wnify("board-goes-here");
+   game.flip_player(1);
+   game.next_move();
+   pubnub.subscribe({'channel':CHESS_CHANNEL_NAME,'message':function(message){
+      game.move(message.start,message.end,message.promotion);
+   }});
+  </script>
+ </body>
+</html>
