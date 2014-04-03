@@ -17,12 +17,36 @@ var YOUR_NAME = prompt('Your name?');
   P4WN_IMAGE_DIR = 'images';
   var game = p4wnify("board-goes-here");
   game.next_move();
+  var get_all_history = function(args) {
+      var channel  = args['channel']
+      ,   callback = args['callback']
+      ,   start    = 0
+      ,   count    = 100
+      ,   history  = []
+      ,   params   = {
+              channel  : channel,
+              count    : count,
+              reverse : false,
+              callback : function(messages) {
+                  var msgs = messages[0];
+                  start = messages[1];
+                  params.start = start;
+                  pubnub.each( msgs.reverse(), function(m) {history.push(m)} );
+                  if (msgs.length < count) return callback(history);
+                  count = 100;
+                  add_messages();
+              }
+          };
+
+      add_messages();
+      function add_messages() { pubnub.history(params) }
+  }
   var parsePubnubMessage = function(data, type) {
     var messages = [];
     if (type === 'subscribe') {
       messages.push(data);
     } else if (type === 'history') {
-      messages = data[0]
+      messages = data;
     }
     for (var idx in messages) {
       if (messages[idx].type === 'move') {
@@ -35,16 +59,21 @@ var YOUR_NAME = prompt('Your name?');
   };
   pubnub.subscribe({
     'channel' : CHESS_CHANNEL_NAME,
+    'state' : {
+      name: YOUR_NAME
+    },
     'message' : function (message) {
       parsePubnubMessage(message, 'subscribe');
     }
   });
-  pubnub.history({
-    'channel' : CHESS_CHANNEL_NAME,
-    'callback' : function (message) {
-      parsePubnubMessage(message, 'history');
-    }
+
+  get_all_history({
+      channel  : CHESS_CHANNEL_NAME,
+      callback : function(messages) {
+        parsePubnubMessage(messages.reverse(), 'history');
+      }
   });
+
   var sendChatMessage = function(msg) {
     pubnub.publish({
       'channel' : CHESS_CHANNEL_NAME,
