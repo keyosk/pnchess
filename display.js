@@ -86,11 +86,13 @@ _p4d_proto.square_clicked = function(square){
     }
 };
 
-_p4d_proto.move = function(start, end, promotion){
+_p4d_proto.move = function(start, end, promotion, do_not_broadcast){
     var state = this.board_state;
     var move_result = state.move(start, end, promotion);
     if(move_result.ok){
-        pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{start:start,end:end,promotion:promotion}});
+        if (do_not_broadcast !== true) {
+            pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'move',start:start,end:end,promotion:promotion}});
+        }
         this.display_move_text(state.moveno, move_result.string);
         this.refresh();
         if (! (move_result.flags & P4_MOVE_FLAG_MATE)){
@@ -172,6 +174,7 @@ _p4d_proto.log = function(msg, klass, onclick){
 }
 
 _p4d_proto.goto_move = function(n){
+    //pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'jump',n:n}});
     var delta;
     if (n < 0)
         delta = -n;

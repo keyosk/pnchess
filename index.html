@@ -1,25 +1,49 @@
 <html>
-   <link rel="stylesheet" href="p4wn.css" />
- <body>
-  <div id="board-goes-here"></div>
- <script src="http://cdn.pubnub.com/pubnub.min.js"></script>
- <script>
-     var pubnub = PUBNUB.init({
-         publish_key   : 'demo',
-         subscribe_key : 'demo'
-     });
-     var CHESS_CHANNEL_NAME = 'codychesstest:' + prompt('ChessRoomName?');
-  </script>
-  <script src="engine.js"></script>
-  <script src="display.js"></script>
-  <script>
-   P4WN_IMAGE_DIR = 'images';
-   var game = p4wnify("board-goes-here");
-   game.flip_player(1);
-   game.next_move();
-   pubnub.subscribe({'channel':CHESS_CHANNEL_NAME,'message':function(message){
-      game.move(message.start,message.end,message.promotion);
-   }});
-  </script>
- </body>
+<link rel="stylesheet" href="p4wn.css" />
+<body>
+<div id="board-goes-here"></div>
+<script src="http://cdn.pubnub.com/pubnub.min.js"></script>
+<script>
+var pubnub = PUBNUB.init({
+  publish_key   : 'demo',
+  subscribe_key : 'demo'
+});
+var CHESS_CHANNEL_NAME = 'codychesstest:' + prompt('ChessRoomName?');
+</script>
+<script src="engine.js"></script>
+<script src="display.js"></script>
+<script>
+  P4WN_IMAGE_DIR = 'images';
+  var game = p4wnify("board-goes-here");
+  game.flip_player(1);
+  game.next_move();
+  var parsePubnubMessage = function(data, type) {
+    var messages = [];
+    if (type === 'subscribe') {
+      messages.push(data);
+    } else if (type === 'history') {
+      messages = data[0]
+    }
+    for (var idx in messages) {
+      if (messages[idx].type === 'move') {
+        game.move(messages[idx].start,messages[idx].end,messages[idx].promotion,true);
+      } else {
+        //game.goto_move(messages[idx].n);
+      }
+    }
+  };
+  pubnub.subscribe({
+    'channel' : CHESS_CHANNEL_NAME,
+    'message' : function (message) {
+      parsePubnubMessage(message, 'subscribe');
+    }
+  });
+  pubnub.history({
+    'channel' : CHESS_CHANNEL_NAME,
+    'callback' : function (message) {
+      parsePubnubMessage(message, 'history');
+    }
+  });
+</script>
+</body>
 </html>
