@@ -47,9 +47,25 @@
 
 .p4wn-log-move {
   padding: 0px 7px;
-  cursor: pointer;
 }
 
 .p4wn-wrapper{
   /*border: 1px solid yellow;*/
+}
+
+.p4wn-status {
+  font-family:Courier;
+}
+
+.p4wn-messages {
+  font-family: monospace;
+  white-space: pre;
+  font-size: smaller;
+  overflow: auto;
+  height: 90%;
+  width: 90%;
+}
+
+.p4wn-send-message {
+  width: 90%;
 }

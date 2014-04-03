@@ -8,14 +8,14 @@ var pubnub = PUBNUB.init({
   publish_key   : 'demo',
   subscribe_key : 'demo'
 });
-var CHESS_CHANNEL_NAME = 'v1:codychesstest:' + prompt('ChessRoomName?');
+var CHESS_CHANNEL_NAME = 'v1.0:codychesstest:' + prompt('ChessRoomName?');
+var YOUR_NAME = prompt('Your name?');
 </script>
 <script src="engine.js"></script>
 <script src="display.js"></script>
 <script>
   P4WN_IMAGE_DIR = 'images';
   var game = p4wnify("board-goes-here");
-  game.flip_player(1);
   game.next_move();
   var parsePubnubMessage = function(data, type) {
     var messages = [];
@@ -27,8 +27,9 @@ var CHESS_CHANNEL_NAME = 'v1:codychesstest:' + prompt('ChessRoomName?');
     for (var idx in messages) {
       if (messages[idx].type === 'move') {
         game.move(messages[idx].start,messages[idx].end,messages[idx].promotion,true);
-      } else {
-        //game.goto_move(messages[idx].n);
+      } else if (messages[idx].type === 'chat') {
+        var msg = '<' + messages[idx].date + '> [' + messages[idx].name + '] : ' + messages[idx].msg;
+        game.messages(msg);
       }
     }
   };
@@ -44,6 +45,18 @@ var CHESS_CHANNEL_NAME = 'v1:codychesstest:' + prompt('ChessRoomName?');
       parsePubnubMessage(message, 'history');
     }
   });
+  var sendChatMessage = function(msg) {
+    pubnub.publish({
+      'channel' : CHESS_CHANNEL_NAME,
+      'message' : {
+        type : 'chat',
+        msg : msg,
+        date : (new Date()).toUTCString(),
+        name : YOUR_NAME
+      }
+    });
+  };
+  sendChatMessage('has joined!');
 </script>
 </body>
 </html>

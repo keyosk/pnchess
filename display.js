@@ -12,6 +12,8 @@ var P4WN_SQUARE_HEIGHT = 30;
 var P4WN_WRAPPER_CLASS = 'p4wn-wrapper';
 var P4WN_BOARD_CLASS = 'p4wn-board';
 var P4WN_MESSAGES_CLASS = 'p4wn-messages';
+var P4WN_SEND_MESSSAGE_CLASS = 'p4wn-send-message';
+var P4WN_STATUS_CLASS = 'p4wn-status';
 var P4WN_LOG_CLASS = 'p4wn-log';
 var P4WN_CONTROLS_CLASS = 'p4wn-controls';
 var P4WN_BLACK_SQUARE = 'p4wn-black-square';
@@ -161,20 +163,38 @@ _p4d_proto.display_move_text = function(moveno, string){
                      p4d.goto_move(n);
                  };
              }(this, moveno));
+
+    if (this.board_state.to_play === 0) {
+        this.status("WHITE's turn");
+    } else {
+        this.status("BLACK's turn");
+    }
 };
 
 _p4d_proto.log = function(msg, klass, onclick){
     var div = this.elements.log;
     var item = p4d_new_child(div, "div");
     item.className = klass;
-    if (onclick !== undefined)
-        _add_event_listener(item, "click", onclick);
+    //if (onclick !== undefined)
+        //_add_event_listener(item, "click", onclick);
     item.innerHTML = msg;
-    div.scrollTop = 999999;
+    div.scrollTop = div.scrollHeight;
+}
+
+_p4d_proto.status = function(msg){
+    var div = this.elements.status;
+    div.innerText = msg;
+}
+
+_p4d_proto.messages = function(msg){
+    var div = this.elements.messages;
+    var item = p4d_new_child(div, "div");
+    item.innerText = msg;
+    div.scrollTop = div.scrollHeight;
 }
 
 _p4d_proto.goto_move = function(n){
-    //pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'jump',n:n}});
+    return;
     var delta;
     if (n < 0)
         delta = -n;
@@ -288,6 +308,7 @@ _p4d_proto.maybe_rotate_board = function(){
 };
 
 _p4d_proto.flip_player = function(i){
+    return;
     this.players[i] = (this.players[i] == 'human') ? 'computer' : 'human';
     this.refresh_buttons();
     this.maybe_rotate_board();
@@ -417,6 +438,7 @@ var P4WN_CONTROLS = [
 ];
 
 _p4d_proto.write_controls_html = function(lut){
+    return;
     var div = this.elements.controls;
     var buttons = this.buttons;
     for (var i = 0; i < lut.length; i++){
@@ -459,6 +481,7 @@ function parse_query(query){
 }
 
 _p4d_proto.interpret_query_string = function(){
+    return;
     /*XXX Query arguments are not all sanitised.
      */
     var attrs = {
@@ -505,14 +528,24 @@ function P4wn_display(target){
     this.elements = {};
     this.elements.inner = inner;
     this.elements.container = container;
+    this.elements.status = p4d_new_child(inner, "div", P4WN_STATUS_CLASS);
     var board = this.elements.board = p4d_new_child(inner, "div", P4WN_BOARD_CLASS);
     var log = this.elements.log = p4d_new_child(inner, "div", P4WN_LOG_CLASS);
+    var send_message = this.elements.send_message = p4d_new_child(inner, "input", P4WN_SEND_MESSSAGE_CLASS);
+
+    PUBNUB.bind('keypress', send_message, function(e) {
+        if (e.which === 13) {
+            sendChatMessage(send_message.value);
+            send_message.value = '';
+        }
+        return true;
+    });
     this.elements.messages = p4d_new_child(inner, "div", P4WN_MESSAGES_CLASS);
-    this.elements.controls = p4d_new_child(container, "div", P4WN_CONTROLS_CLASS);
+    //this.elements.controls = p4d_new_child(container, "div", P4WN_CONTROLS_CLASS);
     this.start = 0;
     this.draw_offers = 0;
     this.board_state = p4_new_game();
-    this.players = ['human', 'computer']; //[white, black] controllers
+    this.players = ['human', 'human']; //[white, black] controllers
     this.pawn_becomes = 0; //index into P4WN_PROMOTION_* arrays
     this.computer_level = P4WN_DEFAULT_LEVEL;
     this.buttons = {
@@ -530,11 +563,12 @@ function p4wnify(id){
     e.inner.style.height = board_height;
     e.log.style.height = board_height;
     e.board.style.height = board_height;
-    e.controls.style.width = (15 * P4WN_SQUARE_WIDTH) + 'px';
+    //e.controls.style.width = (15 * P4WN_SQUARE_WIDTH) + 'px';
     p4d.write_board_html();
-    p4d.write_controls_html(P4WN_CONTROLS);
-    p4d.interpret_query_string();
+    //p4d.write_controls_html(P4WN_CONTROLS);
+    //p4d.interpret_query_string();
     p4d.refresh();
+    p4d.status("WHITE's turn");
     return p4d;
 }
 
