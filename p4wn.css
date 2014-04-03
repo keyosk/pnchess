@@ -22,12 +22,19 @@
   float: left;
 }
 
-.p4wn-log {
+.players-list {
+  float: left;
+  padding-left: 10px;
+  border-right: 1px solid black;
+  padding-right: 10px;
+}
+
+.p4wn-log, .players-list {
   font-family: monospace;
   white-space: pre;
   font-size: smaller;
   overflow: auto;
-  max-width: 14em;
+  max-width: 150px;
   height: 90%;
   /*border:1px solid blue;*/
 }

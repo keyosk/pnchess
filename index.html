@@ -8,7 +8,8 @@ var pubnub = PUBNUB.init({
   publish_key   : 'demo',
   subscribe_key : 'demo'
 });
-var CHESS_CHANNEL_NAME = 'v1.0:codychesstest:' + prompt('ChessRoomName?');
+var v = '1.02';
+var CHESS_CHANNEL_NAME = v + ':codychesstest:' + prompt('ChessRoomName?');
 var YOUR_NAME = prompt('Your name?');
 </script>
 <script src="engine.js"></script>
@@ -74,15 +75,35 @@ var YOUR_NAME = prompt('Your name?');
 
   };
 
+  var drawChattersList = function() {
+    game.update_players(chatters);
+  };
+
   var adjustPresenceList = function (message) {
-    console.log('presence ' + JSON.stringify(message));
+    //console.log('presence ' + JSON.stringify(message));
     if (message.action === 'join' && message.hasOwnProperty('data')) {
       chatters[message.uuid] = message.data.name;
+      drawChattersList();
+    } else if (message.action === 'join' && !message.hasOwnProperty('data')) {
+      //If I fire this state request too quickly, I destroy the state object i'm attempting to access, and excess join commands are issued on other connected users, try setting timeout to 500 and you wil see
+      setTimeout(function() {
+        pubnub.state({
+          uuid : message.uuid,
+          channel : CHESS_CHANNEL_NAME,
+          callback : function(data) {
+            //console.log('state ' + JSON.stringify(data));
+            if (data.hasOwnProperty('name')) {
+              chatters[message.uuid] = data.name
+              drawChattersList();
+            }
+          }
+        });
+      }, 1500);
     } else if (message.action === 'leave') {
       chatters[message.uuid] = null;
       delete chatters[message.uuid];
+      drawChattersList()
     }
-    console.log(chatters);
   };
 
   get_all_history({

@@ -177,19 +177,29 @@ _p4d_proto.log = function(msg, klass, onclick){
     item.className = klass;
     //if (onclick !== undefined)
         //_add_event_listener(item, "click", onclick);
-    item.innerHTML = msg;
+    item.innerHTML = msg.replace(/[<>]/g,'');
     div.scrollTop = div.scrollHeight;
 }
 
 _p4d_proto.status = function(msg){
     var div = this.elements.status;
-    div.innerText = msg;
+    div.innerHTML = msg.replace(/[<>]/g,'');
 }
 
 _p4d_proto.messages = function(msg){
     var div = this.elements.messages;
     var item = p4d_new_child(div, "div");
-    item.innerText = msg;
+    item.innerHTML = msg.replace(/[<>]/g,'');
+    div.scrollTop = div.scrollHeight;
+}
+
+_p4d_proto.update_players = function(msg){
+    var div = this.elements.players_list;
+    div.innerHTML = '';
+    for (var idx in msg) {
+        var item = p4d_new_child(div, "div");
+        item.innerHTML = msg[idx].replace(/[<>]/g,'');
+    }
     div.scrollTop = div.scrollHeight;
 }
 
@@ -530,6 +540,7 @@ function P4wn_display(target){
     this.elements.container = container;
     this.elements.status = p4d_new_child(inner, "div", P4WN_STATUS_CLASS);
     var board = this.elements.board = p4d_new_child(inner, "div", P4WN_BOARD_CLASS);
+    var players_list = this.elements.players_list = p4d_new_child(inner, "div", 'players-list');
     var log = this.elements.log = p4d_new_child(inner, "div", P4WN_LOG_CLASS);
     var send_message = this.elements.send_message = p4d_new_child(inner, "input", P4WN_SEND_MESSSAGE_CLASS);
 
