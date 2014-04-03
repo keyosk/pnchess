@@ -4,11 +4,12 @@
 <div id="board-goes-here"></div>
 <script src="http://cdn.pubnub.com/pubnub.min.js"></script>
 <script>
+
 var pubnub = PUBNUB.init({
-  publish_key   : 'demo',
-  subscribe_key : 'demo'
+  subscribe_key   : 'sub-c-cbcff300-bb84-11e3-b6e0-02ee2ddab7fe',
+  publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5'
 });
-var v = '1.02';
+var v = '1.03';
 var CHESS_CHANNEL_NAME = v + ':codychesstest:' + prompt('ChessRoomName?');
 var YOUR_NAME = prompt('Your name?');
 </script>
@@ -51,7 +52,10 @@ var YOUR_NAME = prompt('Your name?');
     }
     for (var idx in messages) {
       if (messages[idx].type === 'move') {
-        game.move(messages[idx].start,messages[idx].end,messages[idx].promotion,true);
+        if (type === 'subscribe' && messages[idx].uuid === pubnub.get_uuid()) {
+          return;
+        }
+        game.move(messages[idx].start,messages[idx].end,messages[idx].promotion,messages[idx].uuid);
       } else if (messages[idx].type === 'chat') {
         var msg = '<' + messages[idx].date + '> [' + messages[idx].name + '] : ' + messages[idx].msg;
         game.messages(msg);
@@ -75,15 +79,11 @@ var YOUR_NAME = prompt('Your name?');
 
   };
 
-  var drawChattersList = function() {
-    game.update_players(chatters);
-  };
-
   var adjustPresenceList = function (message) {
     //console.log('presence ' + JSON.stringify(message));
     if (message.action === 'join' && message.hasOwnProperty('data')) {
       chatters[message.uuid] = message.data.name;
-      drawChattersList();
+      game.update_players(chatters);
     } else if (message.action === 'join' && !message.hasOwnProperty('data')) {
       //If I fire this state request too quickly, I destroy the state object i'm attempting to access, and excess join commands are issued on other connected users, try setting timeout to 500 and you wil see
       setTimeout(function() {
@@ -94,7 +94,7 @@ var YOUR_NAME = prompt('Your name?');
             //console.log('state ' + JSON.stringify(data));
             if (data.hasOwnProperty('name')) {
               chatters[message.uuid] = data.name
-              drawChattersList();
+              game.update_players(chatters);
             }
           }
         });
@@ -102,7 +102,7 @@ var YOUR_NAME = prompt('Your name?');
     } else if (message.action === 'leave') {
       chatters[message.uuid] = null;
       delete chatters[message.uuid];
-      drawChattersList()
+      game.update_players(chatters);
     }
   };
 

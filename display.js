@@ -88,12 +88,28 @@ _p4d_proto.square_clicked = function(square){
     }
 };
 
+var locked_players = [false,false];
+
 _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
+
+    var uuid = pubnub.get_uuid();
+
+    if (do_not_broadcast) {
+        uuid = do_not_broadcast;
+    }
+
+    if (locked_players[this.board_state.to_play] === false) {
+        locked_players[this.board_state.to_play] = uuid;
+    } else if (locked_players[this.board_state.to_play] !== uuid) {
+        console.log('Someone has already claimed this color, please claim another color or spectate');
+        return false;
+    }
+
     var state = this.board_state;
     var move_result = state.move(start, end, promotion);
     if(move_result.ok){
-        if (do_not_broadcast !== true) {
-            pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'move',start:start,end:end,promotion:promotion}});
+        if (!do_not_broadcast) {
+            pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'move',start:start,end:end,promotion:promotion,uuid:pubnub.get_uuid()}});
         }
         this.display_move_text(state.moveno, move_result.string);
         this.refresh();
