@@ -64,8 +64,26 @@ var YOUR_NAME = prompt('Your name?');
     },
     'message' : function (message) {
       parsePubnubMessage(message, 'subscribe');
+    },
+    presence : function(message) {
+      adjustPresenceList(message);
     }
   });
+
+  var chatters = {
+
+  };
+
+  var adjustPresenceList = function (message) {
+    console.log('presence ' + JSON.stringify(message));
+    if (message.action === 'join' && message.hasOwnProperty('data')) {
+      chatters[message.uuid] = message.data.name;
+    } else if (message.action === 'leave') {
+      chatters[message.uuid] = null;
+      delete chatters[message.uuid];
+    }
+    console.log(chatters);
+  };
 
   get_all_history({
       channel  : CHESS_CHANNEL_NAME,
