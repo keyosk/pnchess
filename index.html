@@ -4,7 +4,28 @@
 <div id="board-goes-here"></div>
 <script src="http://cdn.pubnub.com/pubnub.min.js"></script>
 <script>
+var throttle = function(fn, threshhold, scope) {
+  threshhold || (threshhold = 250);
+  var last,
+      deferTimer;
+  return function () {
+    var context = scope || this;
 
+    var now = +new Date,
+        args = arguments;
+    if (last && now < last + threshhold) {
+      // hold on to it
+      clearTimeout(deferTimer);
+      deferTimer = setTimeout(function () {
+        last = now;
+        fn.apply(context, args);
+      }, threshhold);
+    } else {
+      last = now;
+      fn.apply(context, args);
+    }
+  };
+};
 var pubnub = PUBNUB.init({
   subscribe_key   : 'sub-c-cbcff300-bb84-11e3-b6e0-02ee2ddab7fe',
   publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5'

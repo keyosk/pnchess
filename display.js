@@ -69,6 +69,11 @@ function _event_target(e){
 _p4d_proto.square_clicked = function(square){
     var board = this.board_state.board;
     var mover = this.board_state.to_play;
+    var uuid = pubnub.get_uuid();
+    if (locked_players[mover] !== uuid) {
+        p4_log("not your turn!");
+        return;
+    }
     if (this.players[mover] == 'computer'){
         p4_log("not your turn!");
         return;
@@ -271,16 +276,19 @@ _p4d_proto.start_moving_piece = function(position, do_not_broadcast){
         img.style.top = (window.event.clientY - yoffset) + "px";
     }
     this.start = position;
-    document.onmousemove = function(e){
-        e = e || window.event;
-        x = (e.clientX + 1);
-        y = (e.clientY - yoffset);
-        img.style.left = x + "px";
-        img.style.top = y + "px";
-        if (!do_not_broadcast) {
-            pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'adjust_moving_piece',x:x,y:y,uuid:pubnub.get_uuid()}});
-        }
-    };
+    var throttledPublish = throttle(function() {
+        pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'adjust_moving_piece',x:x,y:y,uuid:pubnub.get_uuid()}});
+    }, 500);
+    if (!do_not_broadcast) {
+        document.onmousemove = function(e){
+            e = e || window.event;
+            x = (e.clientX + 1);
+            y = (e.clientY - yoffset);
+            img.style.left = x + "px";
+            img.style.top = y + "px";
+            throttledPublish();
+        };
+    }
 };
 
 _p4d_proto.stop_moving_piece = function(do_not_broadcast){
