@@ -1,4 +1,4 @@
-var v = '1.03';
+var v = '1.04';
 
 var ROOM = (location.href.match(/room=([^&]+)/)||['']).slice(-1)[0] || prompt('Chess Room Name?')
 
