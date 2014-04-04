@@ -15,13 +15,9 @@ var P4WN_MESSAGES_CLASS = 'p4wn-messages';
 var P4WN_SEND_MESSSAGE_CLASS = 'p4wn-send-message';
 var P4WN_STATUS_CLASS = 'p4wn-status';
 var P4WN_LOG_CLASS = 'p4wn-log';
+var P4WN_PLAYERS_LIST_CLASS = 'p4wn-players-list';
 var P4WN_BLACK_SQUARE = 'p4wn-black-square';
 var P4WN_WHITE_SQUARE = 'p4wn-white-square';
-
-var P4WN_ROTATE_BOARD = true;
-var P4WN_LEVELS = ['stupid', 'middling', 'default', 'slow', 'slowest'];
-var P4WN_DEFAULT_LEVEL = 2;
-var P4WN_ADAPTIVE_LEVELS = false;
 
 var P4WN_IMAGE_DIR = 'images';
 
@@ -45,6 +41,7 @@ var P4WN_IMAGE_NAMES = [
 
 /*the next two should match*/
 var P4WN_PROMOTION_STRINGS = ['queen', 'rook', 'knight', 'bishop'];
+
 var P4WN_PROMOTION_INTS = [P4_QUEEN, P4_ROOK, P4_KNIGHT, P4_BISHOP];
 
 var _p4d_proto = {};
@@ -69,11 +66,7 @@ _p4d_proto.square_clicked = function(square){
     var board = this.board_state.board;
     var mover = this.board_state.to_play;
     var uuid = pubnub.get_uuid();
-    if (locked_players[mover] !== false && locked_players[mover] !== uuid) {
-        p4_log("not your turn!");
-        return;
-    }
-    if (this.players[mover] == 'computer'){
+    if (this.locked_players[mover] !== false && this.locked_players[mover] !== uuid) {
         p4_log("not your turn!");
         return;
     }
@@ -92,8 +85,6 @@ _p4d_proto.square_clicked = function(square){
     }
 };
 
-var locked_players = [false,false];
-
 _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
 
     var uuid = pubnub.get_uuid();
@@ -102,9 +93,9 @@ _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
         uuid = do_not_broadcast;
     }
 
-    if (locked_players[this.board_state.to_play] === false) {
-        locked_players[this.board_state.to_play] = uuid;
-    } else if (locked_players[this.board_state.to_play] !== uuid) {
+    if (this.locked_players[this.board_state.to_play] === false) {
+        this.locked_players[this.board_state.to_play] = uuid;
+    } else if (this.locked_players[this.board_state.to_play] !== uuid) {
         this.messages('Someone has already claimed this color, please claim another color or spectate');
         return false;
     }
@@ -117,14 +108,6 @@ _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
         }
         this.display_move_text(state.moveno, move_result.string);
         this.refresh();
-        if (! (move_result.flags & P4_MOVE_FLAG_MATE)){
-            this.next_move_timeout = window.setTimeout(
-                function(p4d){
-                    return function(){
-                        p4d.next_move();
-                    };
-                }(this), 1);
-        }
     }
     else {
         p4_log("bad move!", start, end);
@@ -138,38 +121,6 @@ _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
     return move_result.ok;
 };
 
-_p4d_proto.next_move = function(){
-    var mover = this.board_state.to_play;
-    if (this.players[mover] == 'computer' &&
-        this.auto_play_timeout === undefined){
-        var timeout = (this.players[1 - mover] == 'computer') ? 500: 10;
-        var p4d = this;
-        this.auto_play_timeout = window.setTimeout(function(){p4d.computer_move();},
-                                                   timeout);
-    }
-};
-
-_p4d_proto.computer_move = function(){
-    this.auto_play_timeout = undefined;
-    var state = this.board_state;
-    var mv;
-    var depth = this.computer_level + 1;
-    var start_time = Date.now();
-    mv = state.findmove(depth);
-    var delta = Date.now() - start_time;
-    p4_log("findmove took", delta);
-    if (P4WN_ADAPTIVE_LEVELS && depth > 2){
-        var min_time = 25 * depth;
-        while (delta < min_time){
-            depth++;
-            mv = state.findmove(depth);
-            delta = Date.now() - start_time;
-            p4_log("retry at depth", depth, " total time:", delta);
-        }
-    }
-    this.move(mv[0], mv[1]);
-};
-
 _p4d_proto.display_move_text = function(moveno, string){
     var mn;
     if ((moveno & 1) == 0){
@@ -180,12 +131,7 @@ _p4d_proto.display_move_text = function(moveno, string){
         while(mn.length < 4)
             mn = ' ' + mn;
     }
-    this.log(mn + string, "p4wn-log-move",
-             function (p4d, n){
-                 return function(e){
-                     p4d.goto_move(n);
-                 };
-             }(this, moveno));
+    this.log(mn + string, "p4wn-log-move");
 };
 
 _p4d_proto.log = function(msg, klass, onclick){
@@ -222,25 +168,6 @@ _p4d_proto.redrawChatters = function(msg){
     div.scrollTop = div.scrollHeight;
 }
 
-_p4d_proto.goto_move = function(n){
-    return;
-    var delta;
-    if (n < 0)
-        delta = -n;
-    else
-        delta = this.board_state.moveno - n;
-    if (delta > this.board_state.moveno)
-        delta = this.board_state.moveno;
-    var div = this.elements.log;
-    for (var i = 0; i < delta; i++){
-        div.removeChild(div.lastChild);
-    }
-    this.board_state.jump_to_moveno(n);
-    this.refresh();
-    this.next_move();
-};
-
-
 //refresh: redraw screen from board
 
 _p4d_proto.refresh = function(){
@@ -253,7 +180,7 @@ _p4d_proto.refresh = function(){
         }
     }
     if (chatters) {
-        var uuid = locked_players[this.board_state.to_play];
+        var uuid = this.locked_players[this.board_state.to_play];
         var color = this.board_state.to_play === 0 ? 'WHITE' : 'BLACK';
         var name = chatters[uuid] ? chatters[uuid] : false;
         if (name) {
@@ -363,22 +290,6 @@ _p4d_proto.refresh_buttons = function(){
     }
 };
 
-_p4d_proto.maybe_rotate_board = function(){
-    var p = this.players;
-    if (p[0] != p[1] && P4WN_ROTATE_BOARD){
-        this.orientation = p[0] == 'computer' ? 1 : 0;
-        this.refresh();
-    }
-};
-
-_p4d_proto.flip_player = function(i){
-    return;
-    this.players[i] = (this.players[i] == 'human') ? 'computer' : 'human';
-    this.refresh_buttons();
-    this.maybe_rotate_board();
-    this.next_move();
-};
-
 function P4wn_display(target){
     if (! this instanceof P4wn_display){
         return new P4wn_display(target);
@@ -390,35 +301,32 @@ function P4wn_display(target){
         container = target.get(0);
     else
         container = target;
+    container.innerHTML = '';
     var inner = p4d_new_child(container, "div", P4WN_WRAPPER_CLASS);
     this.elements = {};
     this.elements.inner = inner;
     this.elements.container = container;
     this.elements.status = p4d_new_child(inner, "div", P4WN_STATUS_CLASS);
-    var board = this.elements.board = p4d_new_child(inner, "div", P4WN_BOARD_CLASS);
-    var players_list = this.elements.players_list = p4d_new_child(inner, "div", 'players-list');
-    var log = this.elements.log = p4d_new_child(inner, "div", P4WN_LOG_CLASS);
-    var send_message = this.elements.send_message = p4d_new_child(inner, "input", P4WN_SEND_MESSSAGE_CLASS);
-
-    pubnub.bind('keypress', send_message, function(e) {
+    this.elements.board = p4d_new_child(inner, "div", P4WN_BOARD_CLASS);
+    this.elements.players_list = p4d_new_child(inner, "div", P4WN_PLAYERS_LIST_CLASS);
+    this.elements.log = p4d_new_child(inner, "div", P4WN_LOG_CLASS);
+    var send_messag_el = this.elements.send_message = p4d_new_child(inner, "input", P4WN_SEND_MESSSAGE_CLASS);
+    pubnub.bind('keypress', send_messag_el, function(e) {
         if (e.which === 13) {
-            sendChatMessage(send_message.value);
-            send_message.value = '';
+            sendChatMessage(send_messag_el.value);
+            send_messag_el.value = '';
         }
         return true;
     });
     this.elements.messages = p4d_new_child(inner, "div", P4WN_MESSAGES_CLASS);
-    //this.elements.controls = p4d_new_child(container, "div", P4WN_CONTROLS_CLASS);
     this.start = 0;
-    this.draw_offers = 0;
     this.board_state = p4_new_game();
-    this.players = ['human', 'human']; //[white, black] controllers
     this.pawn_becomes = 0; //index into P4WN_PROMOTION_* arrays
-    this.computer_level = P4WN_DEFAULT_LEVEL;
     this.buttons = {
         elements: [],
         refreshers: []
     };
+    this.locked_players = [false, false];
     this.move_listeners = [];
     return this;
 }
@@ -430,9 +338,8 @@ function p4wnify(id){
     e.inner.style.height = board_height;
     e.log.style.height = board_height;
     e.board.style.height = board_height;
-    //e.controls.style.width = (15 * P4WN_SQUARE_WIDTH) + 'px';
+    e.players_list.style.height = board_height;
     p4d.write_board_html();
-    //p4d.interpret_query_string();
     p4d.status("WHITE's turn");
     p4d.refresh();
     return p4d;

@@ -85,6 +85,10 @@ var parsePubnubMessage = function(data, type) {
       game.stop_moving_piece(messages[idx].uuid);
     } else if (messages[idx].type === 'adjust_moving_piece' && type === 'subscribe' && messages[idx].uuid !== pubnub.get_uuid()) {
       game.adjust_moving_piece(messages[idx].x,messages[idx].y);
+    } else if (messages[idx].type === 'new_game') {
+      game = p4wnify("chess-board");
+      game.redrawChatters(chatters);
+      game.refresh();
     }
   }
 };
@@ -171,3 +175,12 @@ setTimeout(function() {
   });
 
 },1500);
+
+var newGame = function() {
+  pubnub.publish({
+    channel : CHESS_CHANNEL_NAME,
+    message : {
+      type : 'new_game'
+    }
+  });
+};

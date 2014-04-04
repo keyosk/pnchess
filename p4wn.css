@@ -22,14 +22,14 @@
   float: left;
 }
 
-.players-list {
+.p4wn-players-list {
   float: left;
   padding-left: 10px;
   border-right: 1px solid black;
   padding-right: 10px;
 }
 
-.p4wn-log, .players-list {
+.p4wn-log, .p4wn-players-list {
   font-family: monospace;
   white-space: pre;
   font-size: smaller;
