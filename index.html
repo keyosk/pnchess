@@ -42,7 +42,6 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
 <script>
   P4WN_IMAGE_DIR = 'images';
   var game = p4wnify("board-goes-here");
-  game.next_move();
   var get_all_history = function(args) {
       var channel  = args['channel']
       ,   callback = args['callback']
@@ -92,7 +91,37 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
       }
     }
   };
+
+  var chatters = {
+
+  };
+
+  var getChatterState = function(uuid) {
+    pubnub.state({
+      channel : CHESS_CHANNEL_NAME,
+      uuid : uuid,
+      callback : function(data) {
+        if (data.hasOwnProperty('name')) {
+          chatters[uuid] = data.name
+          game.update_players(chatters);
+        }
+      }
+    });
+  };
+
+  var refreshChatters = function() {
+    pubnub.here_now({
+      channel : CHESS_CHANNEL_NAME,
+      callback : function(msg) {
+        for (var idx in msg.uuids) {
+          getChatterState(msg.uuids[idx]);
+        }
+      }
+    });
+  };
+
   pubnub.subscribe({
+    'noheresync' : true,
     'channel' : CHESS_CHANNEL_NAME,
     'state' : {
       name: YOUR_NAME
@@ -105,43 +134,21 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
     }
   });
 
-  var chatters = {
-
-  };
-
   var adjustPresenceList = function (message) {
-    //console.log('presence ' + JSON.stringify(message));
     if (message.action === 'join' && message.hasOwnProperty('data')) {
       chatters[message.uuid] = message.data.name;
       game.update_players(chatters);
     } else if (message.action === 'join' && !message.hasOwnProperty('data')) {
       //If I fire this state request too quickly, I destroy the state object i'm attempting to access, and excess join commands are issued on other connected users, try setting timeout to 500 and you wil see
       setTimeout(function() {
-        pubnub.state({
-          uuid : message.uuid,
-          channel : CHESS_CHANNEL_NAME,
-          callback : function(data) {
-            //console.log('state ' + JSON.stringify(data));
-            if (data.hasOwnProperty('name')) {
-              chatters[message.uuid] = data.name
-              game.update_players(chatters);
-            }
-          }
-        });
-      }, 1500);
-    } else if (message.action === 'leave') {
+        getChatterState(message.uuid);
+      }, 1000);
+    } else if (message.action === 'leave' || message.action === 'timeout') {
       chatters[message.uuid] = null;
       delete chatters[message.uuid];
       game.update_players(chatters);
     }
   };
-
-  get_all_history({
-      channel  : CHESS_CHANNEL_NAME,
-      callback : function(messages) {
-        parsePubnubMessage(messages.reverse(), 'history');
-      }
-  });
 
   var sendChatMessage = function(msg) {
     pubnub.publish({
@@ -155,6 +162,20 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
     });
   };
   sendChatMessage('has joined!');
+
+  setTimeout(function() {
+
+    get_all_history({
+        channel  : CHESS_CHANNEL_NAME,
+        callback : function(messages) {
+          parsePubnubMessage(messages.reverse(), 'history');
+        }
+    });
+
+    refreshChatters();
+
+  },1000);
+
 </script>
 </body>
 </html>
