@@ -121,7 +121,7 @@ var parsePubNubPresence = function(message) {
   } else if (message.action === 'join' && !message.hasOwnProperty('data')) {
     setTimeout(function() {
       getChatterState(message.uuid);
-    }, 1000);
+    }, 1500);
   } else if (message.action === 'leave' || message.action === 'timeout') {
     chatters[message.uuid] = null;
     delete chatters[message.uuid];
@@ -170,4 +170,4 @@ setTimeout(function() {
       }
   });
 
-},1000);
+},1500);
