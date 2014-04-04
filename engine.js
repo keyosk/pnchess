@@ -631,122 +631,6 @@ function p4_check_check(state, colour){
     return false;
 }
 
-function p4_optimise_piece_list(state){
-    var i, p, s, e;
-    var movelists = [
-        p4_parse(state, 0, 0, 0),
-        p4_parse(state, 1, 0, 0)
-    ];
-    var weights = state.weights;
-    var board = state.board;
-    for (var colour = 0; colour < 2; colour++){
-        var our_values = state.values[colour];
-        var pieces = state.pieces[colour];
-        var movelist = movelists[colour];
-        var threats = movelists[1 - colour];
-        /* sparse array to index by score. */
-        var scores = [];
-        for (i = 0; i < pieces.length; i++){
-            p = pieces[i];
-            scores[p[1]] = {
-                score: 0,
-                piece: p[0],
-                pos: p[1],
-                threatened: 0
-            };
-        }
-        /* Find the best score for each piece by pure static weights,
-         * ignoring captures, which have their own path to the top. */
-        for(i = movelist.length - 1; i >= 0; i--){
-            var mv = movelist[i];
-            var score = mv[0];
-            s = mv[1];
-            e = mv[2];
-            if(! board[e]){
-                var x = scores[s];
-                x.score = Math.max(x.score, score);
-            }
-        }
-        /* moving out of a threat is worth considering, especially
-         * if it is a pawn and you are not.*/
-        for(i = threats.length - 1; i >= 0; i--){
-            var mv = threats[i];
-            var x = scores[mv[2]];
-            if (x !== undefined){
-                var S = board[mv[1]];
-                var r = (1 + x.piece > 3 + S < 4) * 0.01;
-                if (x.threatened < r)
-                    x.threatened = r;
-            }
-        }
-        var pieces2 = [];
-        for (i = 20; i < 100; i++){
-            p = scores[i];
-            if (p !== undefined){
-                p.score += p.threatened * our_values[p.piece];
-                pieces2.push(p);
-            }
-        }
-        pieces2.sort(function(a, b){return a.score - b.score;});
-        for (i = 0; i < pieces2.length; i++){
-            p = pieces2[i];
-            pieces[i] = [p.piece, p.pos];
-        }
-    }
-}
-
-function p4_findmove(state, level, colour, ep){
-    p4_prepare(state);
-    p4_optimise_piece_list(state);
-    var board = state.board;
-    if (arguments.length == 2){
-        colour = state.to_play;
-        ep = state.enpassant;
-    }
-    var movelist = p4_parse(state, colour, ep, 0);
-    var alpha = P4_MIN_SCORE;
-    var mv, t, i;
-    var bs = 0;
-    var be = 0;
-
-    if (level <= 0){
-        for (i = 0; i < movelist.length; i++){
-            mv = movelist[i];
-            if(movelist[i][0] > alpha){
-                alpha = mv[0];
-                bs = mv[1];
-                be = mv[2];
-            }
-        }
-        return [bs, be, alpha];
-    }
-
-    for(i = 0; i < movelist.length; i++){
-        mv = movelist[i];
-        var mscore = mv[0];
-        var ms = mv[1];
-        var me = mv[2];
-        if (mscore > P4_WIN){
-            p4_log("XXX taking king! it should never come to this");
-            alpha = P4_KING_VALUE;
-            bs = ms;
-            be = me;
-            break;
-        }
-        t = -state.treeclimber(state, level - 1, 1 - colour, mscore, ms, me,
-                               P4_MIN_SCORE, -alpha);
-        if (t > alpha){
-            alpha = t;
-            bs = ms;
-            be = me;
-        }
-    }
-    if (alpha < -P4_WIN_NOW && ! p4_check_check(state, colour)){
-        alpha = state.stalemate_scores[colour];
-    }
-    return [bs, be, alpha];
-}
-
 /*p4_make_move changes the state and returns an object containing
  * everything necesary to undo the change.
  *
@@ -1132,40 +1016,6 @@ function p4_move2string(state, s, e, S, promotion, flags, moves){
     return mv;
 }
 
-
-function p4_jump_to_moveno(state, moveno){
-    p4_log('jumping to move', moveno);
-    if (moveno === undefined || moveno > state.moveno)
-        moveno = state.moveno;
-    else if (moveno < 0){
-        moveno = state.moveno + moveno;
-    }
-    var state2 = p4_fen2state(state.beginning);
-    var i = 0;
-    while (state2.moveno < moveno){
-        var m = state.history[i++];
-        p4_move(state2, m[0], m[1], m[2]);
-    }
-    /* copy the replayed state across, not all that deeply, but
-     * enough to cover, eg, held references to board. */
-    var attr, dest;
-    for (attr in state2){
-        var src = state2[attr];
-        if (attr instanceof Array){
-            dest = state[attr];
-            dest.length = 0;
-            for (i = 0; i < src.length; i++){
-                dest[i] = src[i];
-            }
-        }
-        else {
-            state[attr] = src;
-        }
-    }
-    state.prepared = false;
-}
-
-
 /* write a standard FEN notation
  * http://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
  * */
@@ -1316,12 +1166,6 @@ function p4_fen2state(fen, state){
     /* Wrap external functions as methods. */
     state.move = function(s, e, promotion){
         return p4_move(this, s, e, promotion);
-    };
-    state.findmove = function(level){
-        return p4_findmove(this, level);
-    };
-    state.jump_to_moveno = function(moveno){
-        return p4_jump_to_moveno(this, moveno);
     };
     return state;
 }
