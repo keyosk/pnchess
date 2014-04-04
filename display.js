@@ -278,7 +278,6 @@ _p4d_proto.start_moving_piece = function(position, do_not_broadcast){
         img.style.left = x + "px";
         img.style.top = y + "px";
         if (!do_not_broadcast) {
-
             pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'adjust_moving_piece',x:x,y:y,uuid:pubnub.get_uuid()}});
         }
     };

@@ -76,3 +76,7 @@
 .p4wn-send-message {
   width: 90%;
 }
+
+.p4wn-messages div {
+  word-wrap: break-word;
+}
