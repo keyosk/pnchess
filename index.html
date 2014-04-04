@@ -13,7 +13,8 @@ var v = '1.03';
 var ROOM = (location.href.match(/room=([^&]+)/)||[''])
                    .slice(-1)[0] || prompt('Chess Room Name?')
 var CHESS_CHANNEL_NAME = v + ':codychesstest:' + ROOM;
-var YOUR_NAME = prompt('Your name?');
+var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
+                   .slice(-1)[0] || prompt('Your name?');
 </script>
 <script src="engine.js"></script>
 <script src="display.js"></script>
