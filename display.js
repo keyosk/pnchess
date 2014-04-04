@@ -89,7 +89,7 @@ _p4d_proto.square_clicked = function(square){
     }
     else if (this.move(this.start, square, P4WN_PROMOTION_INTS[this.pawn_becomes])){
         /*If the move works, drop the piece.*/
-        this.stop_moving_piece(square);
+        //this.stop_moving_piece(square);
     }
 };
 
@@ -132,6 +132,9 @@ _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
     }
     for (var i = 0; i < this.move_listeners.length; i++){
         this.move_listeners[i](move_result);
+    }
+    if (move_result.ok) {
+        this.stop_moving_piece(start);
     }
     return move_result.ok;
 };
@@ -256,8 +259,10 @@ _p4d_proto.refresh = function(){
 };
 
 _p4d_proto.adjust_moving_piece = function(x,y) {
-    this.elements.moving_img.style.left = x + "px";
-    this.elements.moving_img.style.top = y + "px";
+    if (this.elements.moving_img) {
+        this.elements.moving_img.style.left = x + "px";
+        this.elements.moving_img.style.top = y + "px";
+    }
 };
 
 _p4d_proto.start_moving_piece = function(position, do_not_broadcast){
@@ -266,7 +271,10 @@ _p4d_proto.start_moving_piece = function(position, do_not_broadcast){
     if (!do_not_broadcast) {
         pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'start_moving_piece',position:position,uuid:pubnub.get_uuid()}});
     }
-    var img = this.elements.pieces[this.orientation ? 119 - position : position];
+    this.elements.orig_img = this.elements.pieces[this.orientation ? 119 - position : position];
+    var img = this.elements.pieces[this.orientation ? 119 - position : position].cloneNode(false);
+    this.elements.orig_img.style.opacity = '0.2';
+    this.elements.orig_img.parentNode.appendChild(img);
     this.elements.moving_img = img;
     var old_msie = /MSIE [56]/.test(navigator.userAgent);
     img.style.position = (old_msie) ? 'absolute': 'fixed';
@@ -295,11 +303,12 @@ _p4d_proto.stop_moving_piece = function(do_not_broadcast){
     if (!do_not_broadcast) {
         pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'stop_moving_piece',uuid:pubnub.get_uuid()}});
     }
+    if (this.elements.orig_img) {
+        this.elements.orig_img.style.opacity = '1.0';
+    }
     var img = this.elements.moving_img;
     if (img){
-        img.style.position = 'static';
-        img.style.left = "auto";
-        img.style.top = "auto";
+        img.parentNode.removeChild(img);
     }
     this.start = 0;
     this.elements.moving_img = undefined;
