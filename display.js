@@ -187,11 +187,6 @@ _p4d_proto.display_move_text = function(moveno, string){
                      p4d.goto_move(n);
                  };
              }(this, moveno));
-
-    var uuid = locked_players[this.board_state.to_play];
-    var color = this.board_state.to_play === 0 ? 'WHITE' : 'BLACK';
-    var name = ((chatters[uuid]) ? chatters[uuid] : ((uuid) ? uuid : 'NONAME'));
-    this.status(color + "'s turn : (" + name + ")");
 };
 
 _p4d_proto.log = function(msg, klass, onclick){
@@ -254,6 +249,16 @@ _p4d_proto.refresh = function(){
         if(board[i] != P4_EDGE){
             var j = this.orientation ? 119 - i : i;
             pieces[j].src = P4WN_IMAGE_DIR + '/' + P4WN_IMAGE_NAMES[board[i]];
+        }
+    }
+    if (chatters) {
+        var uuid = locked_players[this.board_state.to_play];
+        var color = this.board_state.to_play === 0 ? 'WHITE' : 'BLACK';
+        var name = chatters[uuid] ? chatters[uuid] : false;
+        if (name) {
+            this.status(color + "'s turn : (" + name + ")");
+        } else {
+            this.status(color + "'s turn");
         }
     }
 };
@@ -626,8 +631,8 @@ function p4wnify(id){
     p4d.write_board_html();
     //p4d.write_controls_html(P4WN_CONTROLS);
     //p4d.interpret_query_string();
-    p4d.refresh();
     p4d.status("WHITE's turn");
+    p4d.refresh();
     return p4d;
 }
 

@@ -104,6 +104,7 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
         if (data.hasOwnProperty('name')) {
           chatters[uuid] = data.name
           game.update_players(chatters);
+          game.refresh();
         }
       }
     });
@@ -165,6 +166,8 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
 
   setTimeout(function() {
 
+    refreshChatters();
+
     get_all_history({
         channel  : CHESS_CHANNEL_NAME,
         callback : function(messages) {
@@ -172,7 +175,6 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
         }
     });
 
-    refreshChatters();
 
   },1000);
 
