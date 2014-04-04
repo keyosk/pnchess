@@ -62,6 +62,12 @@ var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||[''])
       } else if (messages[idx].type === 'chat') {
         var msg = '<' + messages[idx].date + '> [' + messages[idx].name + '] : ' + messages[idx].msg;
         game.messages(msg);
+      } else if (messages[idx].type === 'start_moving_piece' && type === 'subscribe' && messages[idx].uuid !== pubnub.get_uuid()) {
+        game.start_moving_piece(messages[idx].position, messages[idx].uuid);
+      } else if (messages[idx].type === 'stop_moving_piece' && type === 'subscribe' && messages[idx].uuid !== pubnub.get_uuid()) {
+        game.stop_moving_piece(messages[idx].uuid);
+      } else if (messages[idx].type === 'adjust_moving_piece' && type === 'subscribe' && messages[idx].uuid !== pubnub.get_uuid()) {
+        game.adjust_moving_piece(messages[idx].x,messages[idx].y);
       }
     }
   };

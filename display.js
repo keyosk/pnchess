@@ -250,9 +250,17 @@ _p4d_proto.refresh = function(){
     }
 };
 
-_p4d_proto.start_moving_piece = function(position){
+_p4d_proto.adjust_moving_piece = function(x,y) {
+    this.elements.moving_img.style.left = x + "px";
+    this.elements.moving_img.style.top = y + "px";
+};
+
+_p4d_proto.start_moving_piece = function(position, do_not_broadcast){
     /*drop the currently held one, if any*/
-    this.stop_moving_piece();
+    this.stop_moving_piece(true);
+    if (!do_not_broadcast) {
+        pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'start_moving_piece',position:position,uuid:pubnub.get_uuid()}});
+    }
     var img = this.elements.pieces[this.orientation ? 119 - position : position];
     this.elements.moving_img = img;
     var old_msie = /MSIE [56]/.test(navigator.userAgent);
@@ -265,12 +273,21 @@ _p4d_proto.start_moving_piece = function(position){
     this.start = position;
     document.onmousemove = function(e){
         e = e || window.event;
-        img.style.left = (e.clientX + 1) + "px";
-        img.style.top = (e.clientY - yoffset) + "px";
+        x = (e.clientX + 1);
+        y = (e.clientY - yoffset);
+        img.style.left = x + "px";
+        img.style.top = y + "px";
+        if (!do_not_broadcast) {
+
+            pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'adjust_moving_piece',x:x,y:y,uuid:pubnub.get_uuid()}});
+        }
     };
 };
 
-_p4d_proto.stop_moving_piece = function(){
+_p4d_proto.stop_moving_piece = function(do_not_broadcast){
+    if (!do_not_broadcast) {
+        pubnub.publish({'channel':CHESS_CHANNEL_NAME,'message':{type:'stop_moving_piece',uuid:pubnub.get_uuid()}});
+    }
     var img = this.elements.moving_img;
     if (img){
         img.style.position = 'static';
