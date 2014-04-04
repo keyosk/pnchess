@@ -101,7 +101,7 @@ _p4d_proto.move = function(start, end, promotion, do_not_broadcast){
     if (locked_players[this.board_state.to_play] === false) {
         locked_players[this.board_state.to_play] = uuid;
     } else if (locked_players[this.board_state.to_play] !== uuid) {
-        console.log('Someone has already claimed this color, please claim another color or spectate');
+        this.messages('Someone has already claimed this color, please claim another color or spectate');
         return false;
     }
 
@@ -180,11 +180,10 @@ _p4d_proto.display_move_text = function(moveno, string){
                  };
              }(this, moveno));
 
-    if (this.board_state.to_play === 0) {
-        this.status("WHITE's turn");
-    } else {
-        this.status("BLACK's turn");
-    }
+    var uuid = locked_players[this.board_state.to_play];
+    var color = this.board_state.to_play === 0 ? 'WHITE' : 'BLACK';
+    var name = ((chatters[uuid]) ? chatters[uuid] : ((uuid) ? uuid : 'NONAME'));
+    this.status(color + "'s turn : (" + name + ")");
 };
 
 _p4d_proto.log = function(msg, klass, onclick){
