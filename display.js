@@ -202,6 +202,7 @@ _p4d_proto.log = function(msg, klass, onclick){
 _p4d_proto.status = function(msg){
     var div = this.elements.status;
     div.innerHTML = msg.replace(/[<>]/g,'');
+    sounds.play('chat');
 }
 
 _p4d_proto.messages = function(msg){
@@ -209,6 +210,7 @@ _p4d_proto.messages = function(msg){
     var item = p4d_new_child(div, "div");
     item.innerHTML = msg.replace(/[<>]/g,'');
     div.scrollTop = div.scrollHeight;
+    sounds.play('chat');
 }
 
 _p4d_proto.update_players = function(msg){
