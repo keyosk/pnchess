@@ -1,8 +1,8 @@
-var v = '1.04';
+var VERSION = '1.04';
 
 var ROOM = (location.href.match(/room=([^&]+)/)||['']).slice(-1)[0] || prompt('Chess Room Name?')
 
-var CHESS_CHANNEL_NAME = v + ':codychesstest:' + ROOM;
+var CHESS_CHANNEL_NAME = 'chess-' + VERSION + '-' + ROOM;
 
 var YOUR_NAME = (location.href.match(/nick=([^&]+)/)||['']).slice(-1)[0] || prompt('Your name?');
 
@@ -77,7 +77,7 @@ var parsePubnubMessage = function(data, type) {
       }
       game.move(messages[idx].start,messages[idx].end,messages[idx].promotion,messages[idx].uuid);
     } else if (messages[idx].type === 'chat') {
-      var msg = '<' + messages[idx].date + '> [' + messages[idx].name + '] : ' + messages[idx].msg;
+      var msg = '<' + (new Date(messages[idx].date)).toLocaleString() + '> [' + messages[idx].name + '] : ' + messages[idx].msg;
       game.messages(msg);
     } else if (messages[idx].type === 'start_moving_piece' && type === 'subscribe' && messages[idx].uuid !== pubnub.get_uuid()) {
       game.start_moving_piece(messages[idx].position, messages[idx].uuid);
