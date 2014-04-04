@@ -15,7 +15,6 @@ var P4WN_MESSAGES_CLASS = 'p4wn-messages';
 var P4WN_SEND_MESSSAGE_CLASS = 'p4wn-send-message';
 var P4WN_STATUS_CLASS = 'p4wn-status';
 var P4WN_LOG_CLASS = 'p4wn-log';
-var P4WN_CONTROLS_CLASS = 'p4wn-controls';
 var P4WN_BLACK_SQUARE = 'p4wn-black-square';
 var P4WN_WHITE_SQUARE = 'p4wn-white-square';
 
@@ -213,7 +212,7 @@ _p4d_proto.messages = function(msg){
     sounds.play('chat');
 }
 
-_p4d_proto.update_players = function(msg){
+_p4d_proto.redrawChatters = function(msg){
     var div = this.elements.players_list;
     div.innerHTML = '';
     for (var idx in msg) {
@@ -379,204 +378,6 @@ _p4d_proto.flip_player = function(i){
     this.maybe_rotate_board();
     this.next_move();
 };
-/*Button set up data. The *_wrap ones expect the display object and
- * return a this-agnostic function.
- * onclick_wrap()       -- makes a click handler.
- * move_listener_wrap() -- makes a function to be alerted to each move
- * refresh()            -- dynamic label, called in _p4d_proto context
- * label                -- static label
- * id                   -- button is known thus in this.elements
- * debug                -- only drawn if P4_DEBUG is true
- * hidden               -- created but not shown by default
-*/
-var P4WN_CONTROLS = [
-    {/*white player */
-        onclick_wrap: function(p4d){
-            return function(e){
-                p4d.flip_player(0);
-            };
-        },
-        refresh: function(el){
-            var s = this.players[0];
-            el.innerHTML = 'white <img src="' + P4WN_IMAGE_DIR + '/' + s + '.png" alt="' + s + '">';
-        }
-    },
-    {/*black player */
-        onclick_wrap: function(p4d){
-            return function(e){
-                p4d.flip_player(1);
-            };
-        },
-        refresh: function(el){
-            var s = this.players[1];
-            el.innerHTML = 'black <img src="' + P4WN_IMAGE_DIR + '/' + s + '.png" alt="' + s + '">';
-        }
-    },
-    {/*swap sides */
-        onclick_wrap: function(p4d){
-            return function(e){
-                var p = p4d.players;
-                var tmp = p[0];
-                p[0] = p[1];
-                p[1] = tmp;
-                if (p[0] != p[1] && P4WN_ROTATE_BOARD)
-                    p4d.orientation = 1 - p4d.orientation;
-
-                p4d.refresh_buttons();
-                p4d.maybe_rotate_board();
-                p4d.next_move();
-            };
-        },
-        refresh: function(el){
-            if (this.players[0] != this.players[1])
-                el.innerHTML = '<b>swap</b>';
-            else
-                el.innerHTML = 'swap';
-        }
-    },
-    {/* undo*/
-        onclick_wrap: function(p4d){
-            return function(e){
-                p4d.goto_move(-2);
-            };
-        },
-        label: "<b>undo</i>"
-    },
-    {/* pawn promotion*/
-        onclick_wrap: function(p4d){
-            return function(e){
-                var x = (p4d.pawn_becomes + 1) % P4WN_PROMOTION_STRINGS.length;
-                p4d.pawn_becomes = x;
-                _event_target(e).innerHTML = 'pawn becomes <b>' + P4WN_PROMOTION_STRINGS[x] + '</b>';
-            };
-        },
-        refresh: function(el){
-            el.innerHTML = 'pawn becomes <b>' + P4WN_PROMOTION_STRINGS[this.pawn_becomes] + '</b>';
-        }
-    },
-    {/*computer level*/
-        onclick_wrap: function(p4d){
-            return function(e){
-                var x = (p4d.computer_level + 1) % P4WN_LEVELS.length;
-                p4d.computer_level = x;
-                _event_target(e).innerHTML = 'computer level: <b>' + P4WN_LEVELS[x] + '</b>';
-            };
-        },
-        refresh: function(el){
-            el.innerHTML = 'computer level: <b>' + P4WN_LEVELS[this.computer_level] + '</b>';
-        }
-    },
-    {/*draw button -- hidden unless a draw is offered */
-        id: 'draw_button',
-        label: '<b>Draw?</b>',
-        onclick_wrap: function(p4d){
-            return function(e){
-                window.clearTimeout(p4d.next_move_timeout);
-                window.clearTimeout(p4d.auto_play_timeout);
-                p4d.refresh_buttons();
-                p4d.log('DRAW');
-                p4_log(p4_state2fen(p4d.board_state));
-                p4d.auto_play_timeout = undefined;
-                p4d.next_move_timeout = undefined;
-            };
-        },
-        move_listener_wrap: function(p4d){
-            return function(move_result){
-                var draw_button = p4d.elements.draw_button;
-                if (move_result.flags & P4_MOVE_FLAG_DRAW){
-                    draw_button.style.display = 'inline-block';
-                    if (p4d.draw_offered || p4d.draw_offers > 5){
-                        draw_button.style.color = '#c00';
-                    }
-                    p4d.draw_offered = true;
-                    p4d.draw_offers ++;
-                }
-                else {
-                    p4d.draw_offered = false;
-                    draw_button.style.color = '#000';
-                    draw_button.style.display = 'none';
-                }
-            };
-        },
-        hidden: true
-    }
-];
-
-_p4d_proto.write_controls_html = function(lut){
-    return;
-    var div = this.elements.controls;
-    var buttons = this.buttons;
-    for (var i = 0; i < lut.length; i++){
-        var o = lut[i];
-        if (o.debug && ! P4_DEBUG)
-            continue;
-        var span = p4d_new_child(div, "span");
-        span.className = 'p4wn-control-button';
-        buttons.elements.push(span);
-        _add_event_listener(span, "click",
-                            o.onclick_wrap(this));
-        if (o.label)
-            span.innerHTML = o.label;
-        if (o.move_listener_wrap)
-            this.move_listeners.push(o.move_listener_wrap(this));
-        if (o.hidden)
-            span.style.display = 'none';
-        if (o.refresh)
-            buttons.refreshers.push([o.refresh, span]);
-        if (o.id)
-            this.elements[o.id] = span;
-    }
-    this.refresh_buttons();
-};
-
-function parse_query(query){
-    if (query === undefined)
-        query = window.location.search.substring(1);
-    if (! query) return [];
-    var args = [];
-    var re = /([^&=]+)=?([^&]*)/g;
-    while (true){
-        var match = re.exec(query);
-        if (match === null)
-            break;
-        args.push([decodeURIComponent(match[1].replace(/\+/g, " ")),
-                   decodeURIComponent(match[2].replace(/\+/g, " "))]);
-    }
-    return args;
-}
-
-_p4d_proto.interpret_query_string = function(){
-    return;
-    /*XXX Query arguments are not all sanitised.
-     */
-    var attrs = {
-        start: function(s){p4_fen2state(s, this.board_state)},
-        level: function(s){this.computer_level = parseInt(s)},
-        player: function(s){
-            var players = {
-                white: ['human', 'computer'],
-                black: ['computer', 'human'],
-                both: ['human', 'human'],
-                neither: ['computer', 'computer']
-            }[s.toLowerCase()];
-            if (players !== undefined){
-                this.players = players;
-                this.maybe_rotate_board();
-            }
-        },
-        debug: function(s){P4_DEBUG = parseInt(s)}
-    };
-    var i;
-    var query = parse_query();
-    for (i = 0; i < query.length; i++){
-        var p = query[i];
-        var fn = attrs[p[0]];
-        if (fn !== undefined && attrs.hasOwnProperty(p[0])){
-            fn.call(this, p[1]);
-            this.refresh_buttons();
-        }
-    }
-};
 
 function P4wn_display(target){
     if (! this instanceof P4wn_display){
@@ -599,7 +400,7 @@ function P4wn_display(target){
     var log = this.elements.log = p4d_new_child(inner, "div", P4WN_LOG_CLASS);
     var send_message = this.elements.send_message = p4d_new_child(inner, "input", P4WN_SEND_MESSSAGE_CLASS);
 
-    PUBNUB.bind('keypress', send_message, function(e) {
+    pubnub.bind('keypress', send_message, function(e) {
         if (e.which === 13) {
             sendChatMessage(send_message.value);
             send_message.value = '';
@@ -631,7 +432,6 @@ function p4wnify(id){
     e.board.style.height = board_height;
     //e.controls.style.width = (15 * P4WN_SQUARE_WIDTH) + 'px';
     p4d.write_board_html();
-    //p4d.write_controls_html(P4WN_CONTROLS);
     //p4d.interpret_query_string();
     p4d.status("WHITE's turn");
     p4d.refresh();

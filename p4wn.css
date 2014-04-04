@@ -39,19 +39,6 @@
   /*border:1px solid blue;*/
 }
 
-.p4wn-controls{
-  clear: both;
-  /*border:1px solid green;*/
-}
-
-.p4wn-control-button {
-  padding: 0px 5px;
-  cursor: pointer;
-  white-space: nowrap;
-  display: inline-block;
-  margin: 1px;
-}
-
 .p4wn-log-move {
   padding: 0px 7px;
 }
