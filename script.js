@@ -134,9 +134,9 @@ var sendChatMessage = function(msg) {
     channel : CHESS_CHANNEL_NAME,
     message : {
       date : (new Date()).toUTCString(),
-      name : YOUR_NAME
+      name : YOUR_NAME,
       type : 'chat',
-      msg : msg,
+      msg : msg
     }
   });
 };
