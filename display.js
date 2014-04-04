@@ -70,7 +70,7 @@ _p4d_proto.square_clicked = function(square){
     var board = this.board_state.board;
     var mover = this.board_state.to_play;
     var uuid = pubnub.get_uuid();
-    if (locked_players[mover] !== uuid) {
+    if (locked_players[mover] !== false && locked_players[mover] !== uuid) {
         p4_log("not your turn!");
         return;
     }
