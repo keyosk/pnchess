@@ -10,7 +10,9 @@ var pubnub = PUBNUB.init({
   publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5'
 });
 var v = '1.03';
-var CHESS_CHANNEL_NAME = v + ':codychesstest:' + prompt('ChessRoomName?');
+var ROOM = (location.href.match(/room=([^&]+)/)||[''])
+                   .slice(-1)[0] || prompt('Chess Room Name?')
+var CHESS_CHANNEL_NAME = v + ':codychesstest:' + ROOM;
 var YOUR_NAME = prompt('Your name?');
 </script>
 <script src="engine.js"></script>
