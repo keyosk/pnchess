@@ -511,6 +511,14 @@
         };
         this.locked_players = [false, false];
         this.move_listeners = [];
+        self = this;
+        pubnub.bind('keypress', self.elements.send_message, function(e) {
+            if (e.which === 13) {
+                sendChatMessage(self.elements.send_message.value);
+                self.elements.send_message.value = '';
+            }
+            return true;
+        });
         return this;
     }
 
@@ -530,13 +538,5 @@
     P4wn_display.prototype = _p4d_proto;
 
     game = p4wnify("chess-board");
-
-    pubnub.bind('keypress', game.elements.send_message, function(e) {
-        if (e.which === 13) {
-            sendChatMessage(game.elements.send_message.value);
-            game.elements.send_message.value = '';
-        }
-        return true;
-    });
 
 }());
