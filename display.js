@@ -12,7 +12,8 @@
 
     var pubnub = PUBNUB.init({
       subscribe_key   : 'sub-c-cbcff300-bb84-11e3-b6e0-02ee2ddab7fe',
-      publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5'
+      publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5',
+      ssl : document.location.protocol === 'https:'
     });
 
     var game;
