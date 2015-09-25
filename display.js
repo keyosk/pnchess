@@ -286,26 +286,35 @@
             uuid = do_not_broadcast;
         }
 
+
+        // Determine whether or not the board needs to be flipped
+        // It should be flipped for all spectators after white's first turn
+        // It should be flipped once again for all spectators after black's first turn
+        var isOneOfLockedPlayers = false;
+        var initialNumLockedPlayers = 0;
+        for (var idx in this.locked_players) {
+            if (this.locked_players[idx]) {
+                initialNumLockedPlayers++;
+            }
+            if (pubnub.get_uuid() == this.locked_players[idx]) {
+                isOneOfLockedPlayers = true;
+            }
+        }
+
         if (this.locked_players[this.board_state.to_play] === false) {
             this.locked_players[this.board_state.to_play] = uuid;
+            if (uuid === pubnub.get_uuid()) {
+                isOneOfLockedPlayers = true;
+            }
         } else if (this.locked_players[this.board_state.to_play] !== uuid) {
             this.messages('Someone has already claimed this color, please claim another color or spectate');
             return false;
         }
 
-
-        //loop through locked players and determine if you are a spectator
-        //it should flip orientation every time
-        var isOneOfLockedPlayers = false;
-        for (var idx in this.locked_players) {
-            if (pubnub.get_uuid() == this.locked_players[idx]) {
-                isOneOfLockedPlayers = true;
-            }
-        }
-        if (isOneOfLockedPlayers === false) {
+        if (isOneOfLockedPlayers === false && initialNumLockedPlayers === 0 || (isOneOfLockedPlayers === false && initialNumLockedPlayers === 1)) {
             this.orientation = this.orientation ? 0 : 1;
             this.refresh();
-        }  
+        }
 
         var state = this.board_state;
         var move_result = state.move(start, end, promotion);
@@ -402,6 +411,7 @@
         if (this.elements.moving_img) {
 
             // flip orientation if you are one of the active players and the moving piece is not yours
+            // also if you are a spectator, and the moving piece is black AND black is chosen
             // the assumption is that the board is flipping for a spectator so that they can see what the current player sees and no adjustment is required 
             var isOneOfLockedPlayers = false;
             for (var idx in this.locked_players) {
@@ -409,7 +419,7 @@
                     isOneOfLockedPlayers = true;
                 }
             }
-            if (isOneOfLockedPlayers === true && this.locked_players[this.board_state.to_play] !== pubnub.get_uuid()) {
+            if ((isOneOfLockedPlayers === true && this.locked_players[this.board_state.to_play] !== pubnub.get_uuid()) || (isOneOfLockedPlayers === false && this.board_state.to_play === 1 && this.locked_players[this.board_state.to_play])) {
                 var board_width = 265; // [todo, find it programatically]
                 var board_height = 264; // [todo, find it programatically]
                 x = (board_width - x) - 14; // Some offet due to board position and piece size [todo, find it programatically]
