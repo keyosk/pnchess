@@ -398,6 +398,23 @@
 
     _p4d_proto.adjust_moving_piece = function(x,y) {
         if (this.elements.moving_img) {
+
+            // flip orientation if you are one of the active players and the moving piece is not yours
+            // the assumption is that the board is flipping for a spectator so that they can see what the current player sees and no adjustment is required 
+            var isOneOfLockedPlayers = false;
+            for (var idx in this.locked_players) {
+                if (pubnub.get_uuid() == this.locked_players[idx]) {
+                    isOneOfLockedPlayers = true;
+                }
+            }
+            if (isOneOfLockedPlayers === true && this.locked_players[this.board_state.to_play] !== pubnub.get_uuid()) {
+                var board_width = 265; // [todo, find it programatically]
+                var board_height = 264; // [todo, find it programatically]
+                x = (board_width - x) - 14; // Some offet due to board position and piece size [todo, find it programatically]
+                y = (board_height - y) + 20; // Ditto the above
+            }  
+
+
             this.elements.moving_img.style.left = x + "px";
             this.elements.moving_img.style.top = y + "px";
         }
