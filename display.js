@@ -1,5 +1,7 @@
 (function() {
 
+    if (document.location.protocol === 'http:') { document.location.href = document.location.href.replace('http://','https://'); return; // <3 TLS }
+
     var VERSION = '1.04';
 
     var ROOM = (location.href.match(/room=([^&]+)/)||['']).slice(-1)[0] || prompt('Chess Room Name?')
@@ -13,7 +15,7 @@
     var pubnub = PUBNUB.init({
       subscribe_key   : 'sub-c-cbcff300-bb84-11e3-b6e0-02ee2ddab7fe',
       publish_key : 'pub-c-01bb4e6e-4ad8-4c62-9b72-5278a11cf9e5',
-      ssl : document.location.protocol === 'https:'
+      ssl : true // <3 TLS
     });
 
     var game;
