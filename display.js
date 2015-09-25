@@ -291,6 +291,20 @@
             return false;
         }
 
+
+        //loop through locked players and determine if you are a spectator
+        //it should flip orientation every time
+        var isOneOfLockedPlayers = false;
+        for (var idx in this.locked_players) {
+            if (pubnub.get_uuid() == this.locked_players[idx]) {
+                isOneOfLockedPlayers = true;
+            }
+        }
+        if (isOneOfLockedPlayers === false) {
+            this.orientation = this.orientation ? 0 : 1;
+            this.refresh();
+        }  
+
         var state = this.board_state;
         var move_result = state.move(start, end, promotion);
         if(move_result.ok){
