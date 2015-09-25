@@ -1,6 +1,6 @@
 (function() {
 
-    if (document.location.protocol === 'http:') { document.location.href = document.location.href.replace('http://','https://'); return; // <3 TLS }
+    if (document.location.protocol === 'http:') { document.location.href = document.location.href.replace('http://','https://'); return; } // <3 TLS 
 
     var VERSION = '1.04';
 
